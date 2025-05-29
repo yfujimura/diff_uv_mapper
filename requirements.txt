@@ -1,0 +1,10 @@
+numpy
+einops
+pygltflib
+scikit-image
+scikit-learn
+scipy
+tqdm
+xatlas
+opencv-python
+open3d
