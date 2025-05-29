@@ -54,7 +54,7 @@ class DiffUVMapper():
     ):
         mesh = o3d.io.read_triangle_mesh(mesh_path)
         if decimate_ratio > 0:
-            target_triangle_count = int(len(mesh.triangles) * 0.3)
+            target_triangle_count = int(len(mesh.triangles) * decimate_ratio)
             mesh = mesh.simplify_quadric_decimation(target_triangle_count)
 
         self.v = np.asarray(mesh.vertices)
