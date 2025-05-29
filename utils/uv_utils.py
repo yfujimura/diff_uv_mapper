@@ -1,14 +1,23 @@
+import time
 import numpy as np
 import cv2
 import torch
 import xatlas
 
 def uv_mapping(v, f):
+    print(f"[xatlas] Start UV mapping ...")
+    
+    start = time.time()
+    
     atlas = xatlas.Atlas()
     atlas.add_mesh(v, f)
     chart_options = xatlas.ChartOptions()
     atlas.generate(chart_options=chart_options)
     vmapping, ft, vt = atlas[0]
+
+    end = time.time()
+    print(f"[xatlas] Finish UV mapping: {end - start:.3f} sec.")
+    
     return vmapping, ft, vt
 
 def uv_padding(image, mask, padding = None, backend = 'knn'):

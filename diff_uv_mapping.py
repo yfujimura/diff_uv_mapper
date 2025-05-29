@@ -310,7 +310,7 @@ if __name__ == "__main__":
             args.train_iters,
             {
                 "albedo": 1e-2,
-                "offset": 1e-3,
+                "offset": 1e-4,
             },
             args.weight,
         )
