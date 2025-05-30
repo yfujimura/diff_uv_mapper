@@ -24,6 +24,9 @@ python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ --run_optim
 
 # optimize texture and mesh on images rendered by 2DGS
 python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ -r data/chair/renders --run_optimization
+
+# optimize only texture
+python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ --run_optimization --optimize_only_texture
 ```
 
 ## Acknowledgments
