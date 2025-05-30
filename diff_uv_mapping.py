@@ -3,6 +3,7 @@
 #  - python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ # output textured mesh
 #  - python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ --run_optimization # optimize texture and mesh
 #  - python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ -r data/chair/renders --run_optimization # optimize texture and mesh on images rendered by 2DGS
+#  - python diff_uv_mapping.py -m data/chair/fuse_post.ply -s data/chair/ --run_optimization --optimize_only_texture # optimize only texture
 #
 # This code is based on the following great works:
 #   - https://github.com/3DTopia/LGM/blob/main/convert.py
@@ -24,7 +25,7 @@ import nvdiffrast.torch as dr
 import pygltflib
 
 from utils.uv_utils import uv_mapping, uv_padding, align_v_to_vt
-from utils.optim_utils import inverse_sigmoid, OptimConfig
+from utils.optim_utils import inverse_sigmoid, get_optim_config
 from utils.camera_utils import get_perspective
 from dataset import get_dataset
 
@@ -36,6 +37,7 @@ def parse_args():
     parser.add_argument("-o", "--output_path", type=str, default="output", help="Output directory")
     parser.add_argument("--decimate_ratio", type=float, default=0.3, help="Decimation ratio of faces")
     parser.add_argument("--run_optimization", action='store_true', help="If True, texture and vertexes are optimized")
+    parser.add_argument("--optimize_only_texture", action='store_true', help="If True, only texture is optimized")
     parser.add_argument("--train_iters", type=int, default=1000, help="Number of training iters")
     parser.add_argument("--weight", type=float, default=1e+4, help="Weight for regularizing vertex offsets")
     args = parser.parse_args()
@@ -121,11 +123,17 @@ class DiffUVMapper():
         train_iters = optim_config.train_iters
         lr = optim_config.lr
         weight = optim_config.weight
-        
-        optimizer = torch.optim.Adam([
-            {'params': self.albedo, 'lr': lr["albedo"]},
-            {'params': self.offset, 'lr': lr["offset"]},
-        ])
+
+        if optim_config.optimize_only_texture:
+            self.offset.required_grad = False
+            optimizer = torch.optim.Adam([
+                {'params': self.albedo, 'lr': lr["albedo"]},
+            ])
+        else:
+            optimizer = torch.optim.Adam([
+                {'params': self.albedo, 'lr': lr["albedo"]},
+                {'params': self.offset, 'lr': lr["offset"]},
+            ])
         
         idxs = list(range(len(self.train_dataset)))
         pbar = tqdm.trange(train_iters)
@@ -306,14 +314,7 @@ if __name__ == "__main__":
     
     diff_uv_mapper = DiffUVMapper(args.mesh_path, args.scene_path, renders_path=args.renders_path, decimate_ratio=args.decimate_ratio)
     if args.run_optimization:
-        optim_config = OptimConfig(
-            args.train_iters,
-            {
-                "albedo": 1e-2,
-                "offset": 1e-4,
-            },
-            args.weight,
-        )
+        optim_config = get_optim_config(args)
         diff_uv_mapper.optimize(optim_config)
         diff_uv_mapper.write_glb(os.path.join(args.output_path, f"mesh_w_optim_{args.train_iters}.glb"))
         print(f"Saved to", os.path.join(args.output_path, f"mesh_w_optim_{args.train_iters}.glb"))
