@@ -80,20 +80,20 @@ class ColmapDataset(torch.utils.data.Dataset):
             cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
             cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
 
-        self.cam_infos = readColmapCameras(cam_extrinsics, cam_intrinsics, os.path.join(dataset_path, "images"))
+        cam_infos = readColmapCameras(cam_extrinsics, cam_intrinsics, os.path.join(dataset_path, "images"))
+        self.cam_infos = sorted(cam_infos.copy(), key = lambda x : x.image_name)
 
         self.renders_path = renders_path
 
     def __getitem__(self, index):
         cam_info = self.cam_infos[index]
 
-        if self.renders_path is not None:
+        if self.renders_path is None:
             rgba = np.array(Image.open(cam_info.image_path)) / 255.
             image, alpha = rgba[:,:,:3], rgba[:,:,3:]
             image = rearrange(torch.from_numpy(image).float(), "h w c -> c h w")
         else:
-            filename = cam_info.image_path.split("/")[-1]
-            image = np.array(Image.open(os.path.join(self.renders_path, filename))) / 255.
+            image = np.array(Image.open(os.path.join(self.renders_path, f"{index:05}.png"))) / 255.
             image = rearrange(torch.from_numpy(image).float(), "h w c -> c h w")
             
 
